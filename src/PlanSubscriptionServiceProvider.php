@@ -20,7 +20,6 @@ class PlanSubscriptionServiceProvider extends ServiceProvider
 {
     public function boot(Filesystem $filesystem)
     {
-        // Function not available and 'publish' not relevant in Lumen
         if (function_exists('config_path')) {
             $this->publishes([
                 __DIR__.'/../config/plan-subscription.php' => config_path('plan-subscription.php'),

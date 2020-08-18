@@ -60,7 +60,7 @@ class CreatePermissionTables extends Migration
 
         Schema::create('usages', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedFloat('used');
+            $table->float('used');
             $table->timestamps();
 
             $table->foreignId('subscription_id')->constrained();
