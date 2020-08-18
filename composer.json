@@ -1,0 +1,30 @@
+{
+    "name": "undjike/plan-subscription-system",
+    "description": "Plans, features and subscriptions management system for your applications.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ulrich Pascal Ndjike Zoa",
+            "email": "ndjikezoaulrich@gmail.com"
+        }
+    ],
+    "require": {
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^5.4",
+        "phpunit/phpunit": "^9.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Undjike\\PlanSubscriptionSystem\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "undjike\\PlanSubscriptionSystem\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
