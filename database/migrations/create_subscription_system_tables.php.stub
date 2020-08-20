@@ -45,7 +45,7 @@ class CreateSubscriptionSystemTables extends Migration
             $table->unsignedSmallInteger('resettable_period')->default(0);
             $table->string('resettable_interval')->default('month');
 
-            $table->primary(['permission_id', 'feature_id']);
+            $table->primary(['plan_id', 'feature_id']);
 
             $table->foreignId('plan_id')->constrained();
             $table->foreignId('feature_id')->constrained();
