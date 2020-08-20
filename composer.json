@@ -23,9 +23,16 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "undjike\\PlanSubscriptionSystem\\Tests\\": "tests/"
+            "Undjike\\PlanSubscriptionSystem\\Tests\\": "tests/"
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Undjike\\PlanSubscriptionSystem\\PlanSubscriptionServiceProvider"
+            ]
+        }
+    }
 }

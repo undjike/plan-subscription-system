@@ -23,6 +23,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\DB;
 use LogicException;
+use Undjike\PlanSubscriptionSystem\Events\SubscriptionCancelled;
+use Undjike\PlanSubscriptionSystem\Events\SubscriptionPlanChanged;
+use Undjike\PlanSubscriptionSystem\Events\SubscriptionRenewed;
 use Undjike\PlanSubscriptionSystem\Services\Period;
 use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
 
@@ -223,6 +226,20 @@ class Subscription extends Model
      * @return $this
      */
     public function cancel()
+    {
+        $this->canceled_at = Carbon::now();
+        $this->save();
+        event(new SubscriptionCancelled($this));
+
+        return $this;
+    }
+
+    /**
+     * Cancel subscription without raising event
+     *
+     * @return $this
+     */
+    public function cancelWithoutEvent()
     {
         $this->canceled_at = Carbon::now();
         $this->save();
@@ -482,6 +499,7 @@ class Subscription extends Model
             $newSubscription->push();
 
             if ($action) $action($newSubscription);
+            event(new SubscriptionRenewed($newSubscription));
 
             return $newSubscription;
         }, $tries);
@@ -500,7 +518,7 @@ class Subscription extends Model
     public function changePlan(Plan $plan, ?string $timezone = null, ?callable $action = null, int $tries = 2)
     {
         return DB::transaction(function () use ($action, $timezone, $plan) {
-            $this->cancel();
+            $this->cancelWithoutEvent();
 
             $newSubscription = $this->subscriber->subscriptions()->create([
                 'plan_id' => $plan->id,
@@ -509,6 +527,7 @@ class Subscription extends Model
             ]);
 
             if ($action) $action($this, $newSubscription);
+            event(new SubscriptionPlanChanged($this, $newSubscription));
 
             return $newSubscription;
         }, $tries);

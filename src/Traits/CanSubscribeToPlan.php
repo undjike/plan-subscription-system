@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 use LogicException;
+use Undjike\PlanSubscriptionSystem\Events\NewSubscription;
 use Undjike\PlanSubscriptionSystem\Models\Plan;
 use Undjike\PlanSubscriptionSystem\Models\Subscription;
 
@@ -69,6 +70,7 @@ trait CanSubscribeToPlan
             ]);
 
             if ($action) $action($newSubscription);
+            if ($newSubscription instanceof Subscription) event(new NewSubscription($newSubscription));
 
             return $newSubscription;
         }, $tries);
