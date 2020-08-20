@@ -20,14 +20,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Translatable\HasTranslations;
+use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
 
 /**
- * @property int $id
+ * @property integer $id
  * @property string $name
  * @property string $description
  * @property float $price
  * @property float $signup_fee
  * @property bool $dedicated
+ * @property integer $trial_period
+ * @property string $trial_interval
+ * @property integer $invoice_period
+ * @property string $invoice_interval
+ * @property integer $grace_period
+ * @property string $grace_interval
  * @property-read Collection|Feature[] $features
  * @property-read Collection|Subscription[] $subscriptions
  * @property-read Collection|Subscription[] $activeSubscriptions
@@ -38,14 +45,16 @@ use Spatie\Translatable\HasTranslations;
  */
 class Plan extends Model
 {
-    use HasTranslations, SoftDeletes;
+    use HasTranslations, SoftDeletes, HasFeature;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $fillable = ['name', 'description', 'price', 'signup_fee', 'dedicated'];
+    protected $fillable = ['name', 'description', 'price', 'signup_fee', 'dedicated',
+        'invoice_period', 'invoice_interval', 'grace_period', 'grace_interval',
+        'trial_period', 'trial_interval'];
 
     /**
      * The attributes that are translatable.
@@ -92,31 +101,33 @@ class Plan extends Model
     }
 
     /**
-     * Check if plan has all the specified features
+     * Check if plan is free.
      *
-     * @param string|array $featureNames
      * @return bool
      */
-    public function hasFeature($featureNames): bool
+    public function isFree(): bool
     {
-        $query = $this->features();
-
-        foreach ((array) $featureNames as $feature) {
-            $query = $query->where('name', $feature);
-        }
-
-        return $query->exists();
+        return (float) $this->price <= 0.00;
     }
 
     /**
-     * Check if plan has any of the specified features
+     * Check if plan has trial.
      *
-     * @param string|array|mixed $featureName
      * @return bool
      */
-    public function hasAnyFeature(...$featureName): bool
+    public function hasTrial(): bool
     {
-        return $this->features()->whereIn('name', (array) $featureName)->exists();
+        return $this->trial_period && $this->trial_interval;
+    }
+
+    /**
+     * Check if plan has grace.
+     *
+     * @return bool
+     */
+    public function hasGrace(): bool
+    {
+        return $this->grace_period && $this->grace_interval;
     }
 
     /**

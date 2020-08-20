@@ -23,6 +23,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string description
  * @property float price
  * @property string quantifier
+ * @method static firstWhere(string $string, mixed $value = null)
  */
 class Feature extends Model
 {
@@ -43,6 +44,17 @@ class Feature extends Model
     public $translatable = ['description'];
 
     /**
+     * Get feature by name
+     *
+     * @param string $featureName
+     * @return mixed
+     */
+    public static function byName(string $featureName)
+    {
+        return self::firstWhere('name', $featureName);
+    }
+
+    /**
      * All plans that have the feature
      *
      * @return BelongsToMany
@@ -58,7 +70,7 @@ class Feature extends Model
      * @param Plan $plan
      * @return bool
      */
-    public function existsIn(Plan $plan): bool
+    public function existsInPlan(Plan $plan): bool
     {
         return $plan->hasFeature($this->name);
     }
@@ -67,9 +79,9 @@ class Feature extends Model
      * Allowed value in a plan for the feature
      *
      * @param Plan $plan
-     * @return ?int
+     * @return ?float
      */
-    public function valueIn(Plan $plan): ?int
+    public function valueInPlan(Plan $plan): ?float
     {
         return optional($plan->features()->firstWhere('name', $this->name))->pivot->value;
     }
@@ -80,7 +92,7 @@ class Feature extends Model
      * @param Plan $plan
      * @return ?int
      */
-    public function resettablePeriodIn(Plan $plan): ?int
+    public function resettablePeriodInPlan(Plan $plan): ?int
     {
         return optional($plan->features()->firstWhere('name', $this->name))->pivot->resettable_period;
     }
@@ -91,7 +103,7 @@ class Feature extends Model
      * @param Plan $plan
      * @return ?string
      */
-    public function resettableIntervalIn(Plan $plan): ?string
+    public function resettableIntervalInPlan(Plan $plan): ?string
     {
         return optional($plan->features()->firstWhere('name', $this->name))->pivot->resettable_interval;
     }
@@ -102,7 +114,7 @@ class Feature extends Model
      * @param Subscription $subscription
      * @return int|mixed
      */
-    public function totalUsageIn(Subscription $subscription)
+    public function totalUsageInSubscription(Subscription $subscription)
     {
         return $subscription->usages()->where('feature_id', $this->id)->sum('used');
     }
@@ -113,8 +125,8 @@ class Feature extends Model
      * @param Subscription $subscription
      * @return int|mixed|null
      */
-    public function remainingUsageIn(Subscription $subscription)
+    public function remainingUsageInSubscription(Subscription $subscription)
     {
-        return $subscription->remainingUsageOf($this);
+        return $subscription->remainingUsageOfFeature($this);
     }
 }

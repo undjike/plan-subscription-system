@@ -13,6 +13,8 @@
 namespace Undjike\PlanSubscriptionSystem\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Undjike\PlanSubscriptionSystem\Traits\BelongsToFeature;
+use Undjike\PlanSubscriptionSystem\Traits\BelongsToSubscription;
 
 /**
  * @property float $price
@@ -20,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Supplement extends Model
 {
+    use BelongsToSubscription, BelongsToFeature;
+
     /**
      * The attributes that are mass assignable.
      *
