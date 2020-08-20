@@ -37,12 +37,13 @@ class CreateSubscriptionSystemTables extends Migration
             $table->{$this->jsonable()}('description')->nullable();
             $table->unsignedFloat('price');
             $table->string('quantifier')->nullable();
+            $table->boolean('extendable')->default(false);
             $table->timestamps();
         });
 
         Schema::create('plan_features', function (Blueprint $table) {
             $table->unsignedMediumInteger('value');
-            $table->unsignedSmallInteger('resettable_period')->default(0);
+            $table->unsignedSmallInteger('resettable_period')->default(1);
             $table->string('resettable_interval')->default('month');
 
             $table->primary(['plan_id', 'feature_id']);
@@ -55,7 +56,7 @@ class CreateSubscriptionSystemTables extends Migration
             $table->bigIncrements('id');
             $table->morphs('subscriber');
             $table->unsignedFloat('price');
-            $table->timestamp('stars_at');
+            $table->timestamp('starts_at');
             $table->timestamp('ends_at');
             $table->timestamp('canceled_at')->nullable();
             $table->string('timezone')->nullable();

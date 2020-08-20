@@ -12,13 +12,34 @@
 
 namespace Undjike\PlanSubscriptionSystem\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Undjike\PlanSubscriptionSystem\Traits\BelongsToFeature;
 use Undjike\PlanSubscriptionSystem\Traits\BelongsToSubscription;
 
 /**
+ * @property int $id
  * @property float $price
- * @property float $value
+ * @property int $value
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property int $subscription_id
+ * @property int $feature_id
+ * @property-read Feature $feature
+ * @property-read Subscription $subscription
+ * @method static Builder|Supplement newModelQuery()
+ * @method static Builder|Supplement newQuery()
+ * @method static Builder|Supplement query()
+ * @method static Builder|Supplement whereCreatedAt($value)
+ * @method static Builder|Supplement whereFeatureId($value)
+ * @method static Builder|Supplement whereId($value)
+ * @method static Builder|Supplement wherePrice($value)
+ * @method static Builder|Supplement whereSubscriptionId($value)
+ * @method static Builder|Supplement whereUpdatedAt($value)
+ * @method static Builder|Supplement whereValue($value)
+ * @method static self firstWhere(string $string, string $featureName)
+ * @method static self create(array $array)
  */
 class Supplement extends Model
 {
@@ -29,5 +50,5 @@ class Supplement extends Model
      *
      * @var array
      */
-    protected $fillable = ['price', 'value'];
+    protected $fillable = ['price', 'value', 'subscription_id', 'feature_id'];
 }

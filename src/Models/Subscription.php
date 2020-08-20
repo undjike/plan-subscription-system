@@ -12,7 +12,6 @@
 
 namespace Undjike\PlanSubscriptionSystem\Models;
 
-use Carbon\Carbon;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use Undjike\PlanSubscriptionSystem\Events\SubscriptionCancelled;
@@ -30,17 +30,45 @@ use Undjike\PlanSubscriptionSystem\Services\Period;
 use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
 
 /**
- * @property-read Plan $plan
- * @property-read Collection|Feature[] $features
- * @property integer $id
+ * @property int $id
+ * @property string $subscriber_type
+ * @property int $subscriber_id
  * @property float $price
- * @property string $timezone
  * @property Carbon $starts_at
  * @property Carbon $ends_at
- * @property Carbon $canceled_at
+ * @property Carbon|null $canceled_at
+ * @property string|null $timezone
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property int $plan_id
+ * @property-read Plan $plan
  * @property-read Carbon $trial_ends_at
  * @property-read Carbon $grace_ends_at
- * @property Model subscriber
+ * @property-read Model|Builder $subscriber
+ * @property-read Collection|Supplement[] $supplements
+ * @property-read int|null $supplements_count
+ * @property-read Collection|Usage[] $usages
+ * @property-read int|null $usages_count
+ * @property-read Collection|Feature[] $features
+ * @property-read int|null $features_count
+ * @method static Builder|Subscription endedYet()
+ * @method static Builder|Subscription endingPeriod($dayRange = 3)
+ * @method static Builder|Subscription newModelQuery()
+ * @method static Builder|Subscription newQuery()
+ * @method static Builder|Subscription query()
+ * @method static Builder|Subscription whereCanceledAt($value)
+ * @method static Builder|Subscription whereCreatedAt($value)
+ * @method static Builder|Subscription whereEndsAt($value)
+ * @method static Builder|Subscription whereId($value)
+ * @method static Builder|Subscription wherePlanId($value)
+ * @method static Builder|Subscription wherePrice($value)
+ * @method static Builder|Subscription whereStarsAt($value)
+ * @method static Builder|Subscription whereSubscriberId($value)
+ * @method static Builder|Subscription whereSubscriberType($value)
+ * @method static Builder|Subscription whereTimezone($value)
+ * @method static Builder|Subscription whereUpdatedAt($value)
+ * @method static self firstWhere(string $string, string $featureName)
+ * @method static self create(array $array)
  */
 class Subscription extends Model
 {
@@ -165,7 +193,7 @@ class Subscription extends Model
      *
      * @return ?Carbon
      */
-    public function getTrialEndsAt(): ?Carbon
+    public function getTrialEndsAtAttribute(): ?Carbon
     {
         if ($this->plan->hasTrial()) {
             $method = 'add'.ucfirst($this->plan->trial_interval).'s';
@@ -180,7 +208,7 @@ class Subscription extends Model
      *
      * @return ?Carbon
      */
-    public function getGraceEndsAt(): ?Carbon
+    public function getGraceEndsAtAttribute(): ?Carbon
     {
         if ($this->plan->hasGrace()) {
             $method = 'add'.ucfirst($this->plan->grace_interval).'s';

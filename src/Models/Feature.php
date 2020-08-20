@@ -12,18 +12,41 @@
 
 namespace Undjike\PlanSubscriptionSystem\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Spatie\Translatable\HasTranslations;
 
 /**
- * @property int id
- * @property string name
- * @property string description
- * @property float price
- * @property string quantifier
- * @method static firstWhere(string $string, mixed $value = null)
+ * @property int $id
+ * @property string $name
+ * @property array|null $description
+ * @property float $price
+ * @property bool $extendable
+ * @property string|null $quantifier
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read array $translations
+ * @property-read Collection|Plan[] $plans
+ * @property-read int|null $plans_count
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature newQuery()
+ * @method static Builder|Feature onlyTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature query()
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature whereName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature wherePrice($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature whereQuantifier($value)
+ * @method static \Illuminate\Database\Eloquent\Builder|Feature whereUpdatedAt($value)
+ * @method static Builder|Feature withTrashed()
+ * @method static Builder|Feature withoutTrashed()
+ * @method static self firstWhere(string $string, string $featureName)
+ * @method static self create(array $array)
  */
 class Feature extends Model
 {
@@ -34,7 +57,7 @@ class Feature extends Model
      *
      * @var array
      */
-    protected $fillable = ['name', 'description', 'price', 'quantifier'];
+    protected $fillable = ['name', 'description', 'price', 'quantifier', 'extendable'];
 
     /**
      * The attributes that are translatable.

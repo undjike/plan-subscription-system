@@ -12,36 +12,63 @@
 
 namespace Undjike\PlanSubscriptionSystem\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Spatie\Translatable\HasTranslations;
 use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
 
 /**
- * @property integer $id
+ * @property int $id
  * @property string $name
- * @property string $description
+ * @property array|null $description
  * @property float $price
  * @property float $signup_fee
- * @property bool $dedicated
- * @property integer $trial_period
+ * @property int $dedicated
+ * @property int $trial_period
  * @property string $trial_interval
- * @property integer $invoice_period
+ * @property int $invoice_period
  * @property string $invoice_interval
- * @property integer $grace_period
+ * @property int $grace_period
  * @property string $grace_interval
- * @property-read Collection|Feature[] $features
- * @property-read Collection|Subscription[] $subscriptions
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read Collection|Subscription[] $activeSubscriptions
- * @property Carbon created_at
- * @property Carbon updated_at
- * @property Carbon deleted_at
- * @method Builder withAnyFeature()
+ * @property-read int|null $active_subscriptions_count
+ * @property-read Collection|Feature[] $features
+ * @property-read int|null $features_count
+ * @property-read array $translations
+ * @property-read Collection|Subscription[] $subscriptions
+ * @property-read int|null $subscriptions_count
+ * @method static Builder|Plan newModelQuery()
+ * @method static Builder|Plan newQuery()
+ * @method static \Illuminate\Database\Query\Builder|Plan onlyTrashed()
+ * @method static Builder|Plan query()
+ * @method static Builder|Plan whereCreatedAt($value)
+ * @method static Builder|Plan whereDedicated($value)
+ * @method static Builder|Plan whereDeletedAt($value)
+ * @method static Builder|Plan whereDescription($value)
+ * @method static Builder|Plan whereGraceInterval($value)
+ * @method static Builder|Plan whereGracePeriod($value)
+ * @method static Builder|Plan whereId($value)
+ * @method static Builder|Plan whereInvoiceInterval($value)
+ * @method static Builder|Plan whereInvoicePeriod($value)
+ * @method static Builder|Plan whereName($value)
+ * @method static Builder|Plan wherePrice($value)
+ * @method static Builder|Plan whereSignupFee($value)
+ * @method static Builder|Plan whereTrialInterval($value)
+ * @method static Builder|Plan whereTrialPeriod($value)
+ * @method static Builder|Plan whereUpdatedAt($value)
+ * @method static Builder|Plan withAnyFeature($featureName)
+ * @method static \Illuminate\Database\Query\Builder|Plan withTrashed()
+ * @method static \Illuminate\Database\Query\Builder|Plan withoutTrashed()
+ * @method static self firstWhere(string $string, string $featureName)
+ * @method static self create(array $array)
  */
 class Plan extends Model
 {
