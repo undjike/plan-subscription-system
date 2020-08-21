@@ -45,7 +45,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder|Feature whereUpdatedAt($value)
  * @method static Builder|Feature withTrashed()
  * @method static Builder|Feature withoutTrashed()
- * @method static self firstWhere(string $string, string $featureName)
+ * @method static self firstWhere(string $string, string $value)
  * @method static self create(array $array)
  */
 class Feature extends Model

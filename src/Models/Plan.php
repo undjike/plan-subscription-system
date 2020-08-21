@@ -67,7 +67,7 @@ use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
  * @method static Builder|Plan withAnyFeature($featureName)
  * @method static \Illuminate\Database\Query\Builder|Plan withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Plan withoutTrashed()
- * @method static self firstWhere(string $string, string $featureName)
+ * @method static self firstWhere(string $string, string $value)
  * @method static self create(array $array)
  */
 class Plan extends Model
@@ -89,6 +89,17 @@ class Plan extends Model
      * @var array
      */
     public $translatable = ['description'];
+
+    /**
+     * Get plan by name
+     *
+     * @param string $name
+     * @return mixed
+     */
+    public static function byName(string $name)
+    {
+        return self::firstWhere('name', $name);
+    }
 
     /**
      * All features attached to the plan

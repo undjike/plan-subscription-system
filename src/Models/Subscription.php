@@ -67,7 +67,7 @@ use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
  * @method static Builder|Subscription whereSubscriberType($value)
  * @method static Builder|Subscription whereTimezone($value)
  * @method static Builder|Subscription whereUpdatedAt($value)
- * @method static self firstWhere(string $string, string $featureName)
+ * @method static self firstWhere(string $string, string $value)
  * @method static self create(array $array)
  */
 class Subscription extends Model

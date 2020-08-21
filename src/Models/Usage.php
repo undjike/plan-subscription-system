@@ -36,7 +36,7 @@ use Undjike\PlanSubscriptionSystem\Traits\BelongsToSubscription;
  * @method static Builder|Usage whereSubscriptionId($value)
  * @method static Builder|Usage whereUpdatedAt($value)
  * @method static Builder|Usage whereUsed($value)
- * @method static self firstWhere(string $string, string $featureName)
+ * @method static self firstWhere(string $string, string $value)
  * @method static self create(array $array)
  */
 class Usage extends Model

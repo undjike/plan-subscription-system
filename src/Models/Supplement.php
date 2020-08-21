@@ -38,7 +38,7 @@ use Undjike\PlanSubscriptionSystem\Traits\BelongsToSubscription;
  * @method static Builder|Supplement whereSubscriptionId($value)
  * @method static Builder|Supplement whereUpdatedAt($value)
  * @method static Builder|Supplement whereValue($value)
- * @method static self firstWhere(string $string, string $featureName)
+ * @method static self firstWhere(string $string, string $value)
  * @method static self create(array $array)
  */
 class Supplement extends Model
