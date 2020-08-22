@@ -39,7 +39,7 @@ class CreateSubscriptionSystemTables extends Migration
             $table->string('quantifier')->nullable();
             $table->boolean('countable')->default(true);
             $table->boolean('resettable')->default(false);
-            $table->boolean('extendable')->default(false);
+            $table->boolean('extendable')->default(true);
             $table->timestamps();
             $table->softDeletes();
         });
