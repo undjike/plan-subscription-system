@@ -12,6 +12,7 @@
 
 namespace Undjike\PlanSubscriptionSystem\Models;
 
+use DateInterval;
 use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -94,7 +95,7 @@ class Subscription extends Model
      * @var array
      */
     protected $casts = [
-        'stars_at' => 'datetime',
+        'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'canceled_at' => 'datetime'
     ];
@@ -185,7 +186,7 @@ class Subscription extends Model
      */
     public function canceled(): bool
     {
-        return $this->canceled_at ? Carbon::now()->gte($this->canceled_at) : false;
+        return $this->canceled_at ? now()->gte($this->canceled_at) : false;
     }
 
     /**
@@ -225,7 +226,7 @@ class Subscription extends Model
      */
     public function isOnTrial(): bool
     {
-        return $this->trial_ends_at ? Carbon::now()->lt($this->trial_ends_at) : false;
+        return $this->trial_ends_at ? now()->lt($this->trial_ends_at) : false;
     }
 
     /**
@@ -235,7 +236,17 @@ class Subscription extends Model
      */
     public function isOnGrace(): bool
     {
-        return $this->grace_ends_at ? $this->grace_ends_at->gte(now()) : false;
+        return $this->grace_ends_at ? $this->ended() && $this->grace_ends_at->gte(now()) : false;
+    }
+
+    /**
+     * Check if subscription period has ended and is not on grace.
+     *
+     * @return bool
+     */
+    public function completelyEnded(): bool
+    {
+        return $this->ended() && !$this->isOnGrace();
     }
 
     /**
@@ -245,32 +256,21 @@ class Subscription extends Model
      */
     public function ended(): bool
     {
-        return $this->ends_at ? Carbon::now()->gte($this->ends_at) : false;
+        return $this->ends_at ? now()->gte($this->ends_at) : false;
     }
 
     /**
      * Cancel subscription
      *
+     * @param bool $raiseEvent
      * @return $this
      */
-    public function cancel()
+    public function cancel(bool $raiseEvent = true)
     {
-        $this->canceled_at = Carbon::now();
-        $this->save();
-        event(new SubscriptionCancelled($this));
+        $this->canceled_at = now();
 
-        return $this;
-    }
-
-    /**
-     * Cancel subscription without raising event
-     *
-     * @return $this
-     */
-    public function cancelWithoutEvent()
-    {
-        $this->canceled_at = Carbon::now();
         $this->save();
+        if ($raiseEvent) event(new SubscriptionCancelled($this));
 
         return $this;
     }
@@ -391,8 +391,8 @@ class Subscription extends Model
      */
     public function scopeEndingPeriod(Builder $builder, int $dayRange = 3): Builder
     {
-        $from = Carbon::now();
-        $to = Carbon::now()->addDays($dayRange);
+        $from = now();
+        $to = now()->addDays($dayRange);
 
         return $builder->whereBetween('ends_at', [$from, $to]);
     }
@@ -407,6 +407,48 @@ class Subscription extends Model
     public function scopeEnded(Builder $builder): Builder
     {
         return $builder->where('ends_at', '<=', now());
+    }
+
+    /**
+     * Postpone the subscription's end date
+     *
+     * @param Carbon|DateInterval|string $value
+     * @return Subscription
+     */
+    public function postponeEndDate($value)
+    {
+        if ($value instanceof Carbon)
+        {
+            if ($this->ends_at->gt($value)) throw new LogicException(__('Cannot postpone the an anterior date.'));
+            $this->ends_at =  $value;
+        }
+        elseif ($value instanceof DateInterval) $this->ends_at->add($value);
+        else $this->ends_at = date('Y-m-d H:i:s', strtotime("$this->ends_at +$value"));
+
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * Prepone the subscription's end date
+     *
+     * @param Carbon|DateInterval|string $value
+     * @return Subscription
+     */
+    public function preponeEndDate($value)
+    {
+        if ($value instanceof Carbon)
+        {
+            if ($this->ends_at->lt($value)) throw new LogicException(__('Cannot prepone the an ulterior date.'));
+            $this->ends_at =  $value;
+        }
+        elseif ($value instanceof DateInterval) $this->ends_at->sub($value);
+        else $this->ends_at = date('Y-m-d H:i:s', strtotime("$this->ends_at -$value"));
+
+        $this->save();
+
+        return $this;
     }
 
     /**
@@ -431,7 +473,7 @@ class Subscription extends Model
     {
         $featureResettablePeriod = $this->resettablePeriodOfFeature($feature);
         $featureResettableInterval = $this->resettableIntervalOfFeature($feature);
-        $method = 'add'.ucfirst($this->$featureResettableInterval).'s';
+        $method = 'add'.ucfirst($featureResettableInterval).'s';
 
         return ($featureResettablePeriod && $featureResettableInterval
             && ($this->starts_at->{$method}($featureResettablePeriod)->gte(now())));
@@ -471,11 +513,11 @@ class Subscription extends Model
     {
         $uses = abs($uses);
 
-        if (!$this->featureHasValidity($feature))
-            throw new LogicException(__('We can\'t perform the action due to feature usage expiration.'));
-
         if (!$this->remainsEnoughUsageForFeature($feature, $uses))
             throw new LogicException(__('We can\'t perform the action due to feature usage limitation.'));
+
+        if (!$this->featureHasValidity($feature))
+            throw new LogicException(__('We can\'t perform the action due to feature usage expiration.'));
 
         $this->usages()->create([
             'feature_id' => $feature->id,
@@ -497,6 +539,9 @@ class Subscription extends Model
     {
         $uses = abs($uses);
 
+        if (!$this->featureHasValidity($feature))
+            throw new LogicException(__('We can\'t perform the action due to feature usage expiration.'));
+
         $this->usages()->create([
             'feature_id' => $feature->id,
             'used' => -$uses
@@ -515,18 +560,21 @@ class Subscription extends Model
      */
     public function renew(string $timezone = null, callable $action = null, int $tries = 2)
     {
-        if (($this->ended() && !$this->isOnGrace()) || $this->canceled())
-            throw new LogicException(__('Unable to renew canceled or ended subscription.'));
-
         return DB::transaction(function () use ($timezone, $action) {
-            $newSubscription = $this->replicate(['stars_at', 'ends_at', 'canceled_at']);
+            $this->cancel(false);
+
+            $newSubscription = $this->load('supplements', 'usages')->replicate(['stars_at', 'ends_at', 'canceled_at']);
 
             $newSubscription->price = $this->plan->price;
             $newSubscription->timezone = $timezone;
 
             $newSubscription->push();
 
-            if ($action) $action($newSubscription);
+            if ($action) {
+                $action($newSubscription, $this->ends_at->diff(now()));
+                $newSubscription->refresh();
+            }
+
             event(new SubscriptionRenewed($newSubscription));
 
             return $newSubscription;
@@ -545,8 +593,11 @@ class Subscription extends Model
      */
     public function changePlan(Plan $plan, ?string $timezone = null, ?callable $action = null, int $tries = 2)
     {
+        if ($this->plan->is($plan))
+            throw new LogicException(__('Unable to change to the same plan.'));
+
         return DB::transaction(function () use ($action, $timezone, $plan) {
-            $this->cancelWithoutEvent();
+            $this->cancel(false);
 
             $newSubscription = $this->subscriber->subscriptions()->create([
                 'plan_id' => $plan->id,
@@ -554,7 +605,11 @@ class Subscription extends Model
                 'timezone' => $timezone
             ]);
 
-            if ($action) $action($this, $newSubscription);
+            if ($action) {
+                $action($this, $newSubscription);
+                $newSubscription->refresh();
+            }
+
             event(new SubscriptionPlanChanged($this, $newSubscription));
 
             return $newSubscription;

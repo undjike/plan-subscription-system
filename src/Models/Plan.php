@@ -93,12 +93,12 @@ class Plan extends Model
     /**
      * Get plan by name
      *
-     * @param string $name
+     * @param string $planName
      * @return mixed
      */
-    public static function byName(string $name)
+    public static function byName(string $planName)
     {
-        return self::firstWhere('name', $name);
+        return self::firstWhere('name', $planName);
     }
 
     /**
@@ -171,13 +171,13 @@ class Plan extends Model
     /**
      * Plans with any of the specified features
      *
-     * @param Builder $query
+     * @param Builder $builder
      * @param string|array|mixed $featureName
      * @return Builder
      */
-    public function scopeWithAnyFeature(Builder $query, ...$featureName)
+    public function scopeWithAnyFeature(Builder $builder, ...$featureName)
     {
-        return $query->whereHas('features', function (Builder $query) use ($featureName) {
+        return $builder->whereHas('features', function (Builder $query) use ($featureName) {
             $query->whereIn('name', (array) $featureName);
         });
     }

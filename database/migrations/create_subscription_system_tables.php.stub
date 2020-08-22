@@ -37,8 +37,11 @@ class CreateSubscriptionSystemTables extends Migration
             $table->{$this->jsonable()}('description')->nullable();
             $table->unsignedFloat('price');
             $table->string('quantifier')->nullable();
+            $table->boolean('countable')->default(true);
+            $table->boolean('resettable')->default(false);
             $table->boolean('extendable')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('plan_features', function (Blueprint $table) {

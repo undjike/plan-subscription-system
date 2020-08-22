@@ -25,6 +25,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string $name
  * @property array|null $description
  * @property float $price
+ * @property bool $countable
+ * @property bool $resettable
  * @property bool $extendable
  * @property string|null $quantifier
  * @property Carbon|null $created_at
@@ -57,7 +59,7 @@ class Feature extends Model
      *
      * @var array
      */
-    protected $fillable = ['name', 'description', 'price', 'quantifier', 'extendable'];
+    protected $fillable = ['name', 'description', 'price', 'quantifier', 'countable', 'resettable', 'extendable'];
 
     /**
      * The attributes that are translatable.
@@ -70,11 +72,33 @@ class Feature extends Model
      * Get feature by name
      *
      * @param string $featureName
-     * @return mixed
+     * @return Feature
      */
-    public static function byName(string $featureName)
+    public static function byName(string $featureName): Feature
     {
         return self::firstWhere('name', $featureName);
+    }
+
+    /**
+     * Scope countable features
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeCountable(\Illuminate\Database\Eloquent\Builder $builder)
+    {
+        return $builder->where('countable', "=", 1);
+    }
+
+    /**
+     * Scope resettable features
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeResettable(\Illuminate\Database\Eloquent\Builder $builder)
+    {
+        return $builder->where('resettable', "=", 1);
     }
 
     /**
@@ -106,7 +130,7 @@ class Feature extends Model
      */
     public function valueInPlan(Plan $plan): ?float
     {
-        return optional($plan->features()->firstWhere('name', $this->name))->pivot->value;
+        return data_get($plan->features()->firstWhere('name', $this->name), 'pivot.value', 0);
     }
 
     /**
@@ -117,7 +141,7 @@ class Feature extends Model
      */
     public function resettablePeriodInPlan(Plan $plan): ?int
     {
-        return optional($plan->features()->firstWhere('name', $this->name))->pivot->resettable_period;
+        return data_get($plan->features()->firstWhere('name', $this->name), 'pivot.resettable_period', 0);
     }
 
     /**
@@ -128,7 +152,7 @@ class Feature extends Model
      */
     public function resettableIntervalInPlan(Plan $plan): ?string
     {
-        return optional($plan->features()->firstWhere('name', $this->name))->pivot->resettable_interval;
+        return data_get($plan->features()->firstWhere('name', $this->name), 'pivot.resettable_interval');
     }
 
     /**

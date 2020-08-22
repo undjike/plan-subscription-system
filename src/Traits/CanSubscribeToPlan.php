@@ -59,8 +59,8 @@ trait CanSubscribeToPlan
      */
     public function subscribe(Plan $plan, ?string $timezone = null, ?callable $action = null, int $tries = 2): Model
     {
-        if ($this->lastSubscription()->isActive())
-            throw new LogicException(__('Unable to perform the action because you have an active subscription.'));
+        if ($this->lastSubscription())
+            throw new LogicException(__('Unable to perform the action because you are not a newcomer.'));
 
         return DB::transaction(function () use ($timezone, $plan, $action) {
             $newSubscription = $this->subscriptions()->create([
