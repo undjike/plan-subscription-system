@@ -181,4 +181,17 @@ class Plan extends Model
             $query->whereIn('name', (array) $featureName);
         });
     }
+
+    /**
+     * Check id plan offers enough usage
+     *
+     * @param Usage $usage
+     * @param int $supplementOf
+     * @return bool
+     */
+    public function offerEnoughUsageFor(Usage $usage, int $supplementOf = 0): bool
+    {
+        return $this->hasFeature($usage->feature->name)
+            && ($usage->feature->valueInPlan($this) + $supplementOf) >= $usage->used;
+    }
 }

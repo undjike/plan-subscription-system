@@ -45,7 +45,7 @@ class CreateSubscriptionSystemTables extends Migration
         });
 
         Schema::create('plan_features', function (Blueprint $table) {
-            $table->unsignedMediumInteger('value');
+            $table->unsignedFloat('value');
             $table->unsignedSmallInteger('resettable_period')->default(1);
             $table->string('resettable_interval')->default('month');
 
@@ -79,8 +79,8 @@ class CreateSubscriptionSystemTables extends Migration
 
         Schema::create('supplements', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->unsignedFloat('price');
-            $table->unsignedMediumInteger('value');
+            $table->float('price');
+            $table->float('value');
             $table->timestamps();
 
             $table->foreignId('subscription_id')->constrained();

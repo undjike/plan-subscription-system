@@ -49,4 +49,11 @@ class Usage extends Model
      * @var array
      */
     protected $fillable = ['used', 'subscription_id', 'feature_id'];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array
+     */
+    protected $hidden = ['subscription_id', 'feature_id'];
 }

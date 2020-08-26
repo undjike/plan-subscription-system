@@ -51,4 +51,11 @@ class Supplement extends Model
      * @var array
      */
     protected $fillable = ['price', 'value', 'subscription_id', 'feature_id'];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array
+     */
+    protected $hidden = ['subscription_id', 'feature_id'];
 }

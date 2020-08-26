@@ -25,7 +25,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use Undjike\PlanSubscriptionSystem\Events\SubscriptionCancelled;
-use Undjike\PlanSubscriptionSystem\Events\SubscriptionPlanChanged;
 use Undjike\PlanSubscriptionSystem\Events\SubscriptionRenewed;
 use Undjike\PlanSubscriptionSystem\Services\Period;
 use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
@@ -132,6 +131,7 @@ class Subscription extends Model
      */
     protected static function booted()
     {
+        // Auto-define start and end date for subscriptions
         static::creating(function (self $subscription) {
             self::periodInitializer($subscription);
         });
@@ -326,7 +326,7 @@ class Subscription extends Model
     }
 
     /**
-     * Subscription's usages
+     * Subscription's supplements
      *
      * @return HasMany
      */
@@ -560,10 +560,27 @@ class Subscription extends Model
      */
     public function renew(string $timezone = null, callable $action = null, int $tries = 2)
     {
-        return DB::transaction(function () use ($timezone, $action) {
-            $this->cancel(false);
+        if (!$this->ended() && !$this->canceled())
+            throw new LogicException(__('You can\'t renew because you have an active subscription.'));
 
-            $newSubscription = $this->load('supplements', 'usages')->replicate(['stars_at', 'ends_at', 'canceled_at']);
+        return DB::transaction(function () use ($timezone, $action) {
+            $newSubscription = $this->load([
+                // Load not resettable supplements
+                'supplements' => function ($query) {
+                    $query->whereHas('feature', function ($subQuery) {
+                       $subQuery->notResettable();
+                    });
+            }], [
+                // Load not resettable usages
+                'usages' => function ($query) {
+                    $query->whereHas('feature', function ($subQuery) {
+                        $subQuery->notResettable();
+                    });
+            }])->replicate([
+                'stars_at',
+                'ends_at',
+                'canceled_at'
+            ]);
 
             $newSubscription->price = $this->plan->price;
             $newSubscription->timezone = $timezone;
@@ -571,46 +588,11 @@ class Subscription extends Model
             $newSubscription->push();
 
             if ($action) {
-                $action($newSubscription, $this->ends_at->diff(now()));
+                $action($newSubscription);
                 $newSubscription->refresh();
             }
 
             event(new SubscriptionRenewed($newSubscription));
-
-            return $newSubscription;
-        }, $tries);
-    }
-
-    /**
-     * Change subscription plan.
-     *
-     * @param Plan $plan
-     * @param string|null $timezone
-     * @param ?callable $action
-     * @param int $tries
-     * @return self
-     * @noinspection PhpPossiblePolymorphicInvocationInspection
-     */
-    public function changePlan(Plan $plan, ?string $timezone = null, ?callable $action = null, int $tries = 2)
-    {
-        if ($this->plan->is($plan))
-            throw new LogicException(__('Unable to change to the same plan.'));
-
-        return DB::transaction(function () use ($action, $timezone, $plan) {
-            $this->cancel(false);
-
-            $newSubscription = $this->subscriber->subscriptions()->create([
-                'plan_id' => $plan->id,
-                'price' => $plan->price,
-                'timezone' => $timezone
-            ]);
-
-            if ($action) {
-                $action($this, $newSubscription);
-                $newSubscription->refresh();
-            }
-
-            event(new SubscriptionPlanChanged($this, $newSubscription));
 
             return $newSubscription;
         }, $tries);

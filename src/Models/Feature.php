@@ -102,6 +102,17 @@ class Feature extends Model
     }
 
     /**
+     * Scope not resettable features
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeNotResettable(\Illuminate\Database\Eloquent\Builder $builder)
+    {
+        return $builder->where('resettable', "=", 0);
+    }
+
+    /**
      * All plans that have the feature
      *
      * @return BelongsToMany
