@@ -82,13 +82,6 @@ class Subscription extends Model
     protected $fillable = ['price', 'stars_at', 'ends_at', 'canceled_at', 'timezone', 'plan_id'];
 
     /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array
-     */
-    protected $hidden = ['plan_id'];
-
-    /**
      * The attributes that should be cast.
      *
      * @var array
@@ -117,11 +110,14 @@ class Subscription extends Model
      * Auto-initialize subscription's start and end date
      *
      * @param Subscription $subscription
+     *
      * @throws Exception
      */
     protected static function periodInitializer(Subscription $subscription): void
     {
-        if (!$subscription->starts_at || !$subscription->ends_at) $subscription->setNewPeriod();
+        if (! $subscription->starts_at || ! $subscription->ends_at) {
+            $subscription->setNewPeriod();
+        }
     }
 
     /**
@@ -129,7 +125,7 @@ class Subscription extends Model
      *
      * @return void
      */
-    protected static function booted()
+    protected static function booted(): void
     {
         // Auto-define start and end date for subscriptions
         static::creating(function (self $subscription) {
@@ -148,20 +144,25 @@ class Subscription extends Model
     /**
      * Set new subscription period.
      *
-     * @param ?string|Carbon $start
+     * @param Carbon|string|null $start
      *
-     * @param ?string $invoice_interval
-     * @param ?int $invoice_period
-     * @return $this
+     * @param string|null $invoiceInterval
+     * @param int|null $invoicePeriod
+     *
+     * @return Subscription
      * @throws Exception
      */
-    protected function setNewPeriod($start = null, ?string $invoice_interval = null, ?int $invoice_period = null)
+    protected function setNewPeriod(Carbon|string|null $start = null, ?string $invoiceInterval = null, ?int $invoicePeriod = null): static
     {
-        if (empty($invoice_interval)) $invoice_interval = $this->plan->invoice_interval;
+        if (! $invoiceInterval) {
+            $invoiceInterval = $this->plan->invoice_interval;
+        }
 
-        if (empty($invoice_period)) $invoice_period = $this->plan->invoice_period;
+        if (! $invoicePeriod) {
+            $invoicePeriod = $this->plan->invoice_period;
+        }
 
-        $period = new Period($start, $invoice_interval, $invoice_period);
+        $period = new Period($start, $invoiceInterval, $invoicePeriod);
 
         $this->starts_at = $period->getStartDate();
         $this->ends_at = $period->getEndDate();
@@ -176,7 +177,7 @@ class Subscription extends Model
      */
     public function isActive(): bool
     {
-        return !$this->ended() && !$this->canceled();
+        return ! $this->ended() && ! $this->canceled();
     }
 
     /**
@@ -186,7 +187,7 @@ class Subscription extends Model
      */
     public function canceled(): bool
     {
-        return $this->canceled_at ? now()->gte($this->canceled_at) : false;
+        return $this->canceled_at && now()->gte($this->canceled_at);
     }
 
     /**
@@ -197,7 +198,7 @@ class Subscription extends Model
     public function getTrialEndsAtAttribute(): ?Carbon
     {
         if ($this->plan->hasTrial()) {
-            $method = 'add'.ucfirst($this->plan->trial_interval).'s';
+            $method = 'add' . ucfirst($this->plan->trial_interval) . 's';
             return $this->starts_at->{$method}($this->plan->trial_period);
         }
 
@@ -207,12 +208,12 @@ class Subscription extends Model
     /**
      * Subscription grace period end date.
      *
-     * @return ?Carbon
+     * @return Carbon|null
      */
     public function getGraceEndsAtAttribute(): ?Carbon
     {
         if ($this->plan->hasGrace()) {
-            $method = 'add'.ucfirst($this->plan->grace_interval).'s';
+            $method = 'add' . ucfirst($this->plan->grace_interval) . 's';
             return $this->ends_at->{$method}($this->plan->grace_period);
         }
 
@@ -226,7 +227,7 @@ class Subscription extends Model
      */
     public function isOnTrial(): bool
     {
-        return $this->trial_ends_at ? now()->lt($this->trial_ends_at) : false;
+        return $this->trial_ends_at && now()->lt($this->trial_ends_at);
     }
 
     /**
@@ -236,7 +237,7 @@ class Subscription extends Model
      */
     public function isOnGrace(): bool
     {
-        return $this->grace_ends_at ? $this->ended() && $this->grace_ends_at->gte(now()) : false;
+        return $this->grace_ends_at && $this->ended() && $this->grace_ends_at->gte(now());
     }
 
     /**
@@ -246,7 +247,7 @@ class Subscription extends Model
      */
     public function completelyEnded(): bool
     {
-        return $this->ended() && !$this->isOnGrace();
+        return $this->ended() && ! $this->isOnGrace();
     }
 
     /**
@@ -256,21 +257,25 @@ class Subscription extends Model
      */
     public function ended(): bool
     {
-        return $this->ends_at ? now()->gte($this->ends_at) : false;
+        return $this->ends_at && now()->gte($this->ends_at);
     }
 
     /**
      * Cancel subscription
      *
      * @param bool $raiseEvent
-     * @return $this
+     *
+     * @return Subscription
      */
-    public function cancel(bool $raiseEvent = true)
+    public function cancel(bool $raiseEvent = true): static
     {
         $this->canceled_at = now();
 
         $this->save();
-        if ($raiseEvent) event(new SubscriptionCancelled($this));
+
+        if ($raiseEvent) {
+            event(new SubscriptionCancelled($this));
+        }
 
         return $this;
     }
@@ -297,10 +302,10 @@ class Subscription extends Model
 
     /**
      * Subscription's features
-     * 
+     *
      * @return BelongsToMany
      */
-    public function features()
+    public function features(): BelongsToMany
     {
         return $this->plan->features();
     }
@@ -310,7 +315,7 @@ class Subscription extends Model
      *
      * @return Collection|Feature[]
      */
-    public function getFeaturesAttribute()
+    public function getFeaturesAttribute(): Collection|array
     {
         return $this->plan->features;
     }
@@ -320,7 +325,7 @@ class Subscription extends Model
      *
      * @return HasMany
      */
-    public function usages()
+    public function usages(): HasMany
     {
         return $this->hasMany(Usage::class);
     }
@@ -330,7 +335,7 @@ class Subscription extends Model
      *
      * @return HasMany
      */
-    public function supplements()
+    public function supplements(): HasMany
     {
         return $this->hasMany(Supplement::class);
     }
@@ -339,46 +344,59 @@ class Subscription extends Model
      * Check if subscription has supplements of a feature
      *
      * @param string $featureName
+     *
      * @return bool
      */
     public function hasSupplementsOfFeature($featureName): bool
     {
-        return $this->supplements()->whereHas('feature', function (Builder $builder) use ($featureName) {
-            $builder->where('name', $featureName);
-        })->exists();
+        return $this->supplements()
+            ->whereHas(
+                'feature',
+                fn (Builder $builder) => $builder->where('name', $featureName)
+            )
+            ->exists();
     }
 
     /**
      * Total usage of feature in the subscription
      *
      * @param Feature $feature
+     *
      * @return float
      */
-    public function totalUsageOfFeature(Feature $feature)
+    public function totalUsageOfFeature(Feature $feature): float
     {
-        return (float) $this->usages()->where('feature_id', $feature->id)->sum('used');
+        return (float) $this->usages()
+            ->where('feature_id', $feature->id)
+            ->sum('used');
     }
 
     /**
      * Total supplement of feature in the subscription
      *
      * @param Feature $feature
+     *
      * @return float
      */
-    public function totalSupplementOfFeature(Feature $feature)
+    public function totalSupplementOfFeature(Feature $feature): float
     {
-        return (float) $this->supplements()->where('feature_id', $feature->id)->sum('value');
+        return (float) $this->supplements()
+            ->where('feature_id', $feature->id)
+            ->sum('value');
     }
 
     /**
      * Remaining usage of a feature in the subscription
      *
      * @param Feature $feature
+     *
      * @return float
      */
-    public function remainingUsageOfFeature(Feature $feature)
+    public function remainingUsageOfFeature(Feature $feature): float
     {
-        return (float) $feature->valueInPlan($this->plan) + $this->totalSupplementOfFeature($feature) - $this->totalUsageOfFeature($feature);
+        return (float) $feature->valueInPlan($this->plan)
+            + $this->totalSupplementOfFeature($feature)
+            - $this->totalUsageOfFeature($feature);
     }
 
     /**
@@ -412,18 +430,25 @@ class Subscription extends Model
     /**
      * Postpone the subscription's end date
      *
-     * @param Carbon|DateInterval|string $value
+     * @param DateInterval|string|Carbon $value
+     *
      * @return Subscription
      */
-    public function postponeEndDate($value)
+    public function postponeEndDate(DateInterval|Carbon|string $value): static
     {
-        if ($value instanceof Carbon)
-        {
-            if ($this->ends_at->gt($value)) throw new LogicException(__('Cannot postpone the an anterior date.'));
-            $this->ends_at =  $value;
+        if ($value instanceof Carbon) {
+            if ($this->ends_at->gt($value)) {
+                throw new LogicException(__('Cannot postpone the an anterior date.'));
+            }
+
+            $this->ends_at = $value;
         }
-        elseif ($value instanceof DateInterval) $this->ends_at->add($value);
-        else $this->ends_at = date('Y-m-d H:i:s', strtotime("$this->ends_at +$value"));
+        elseif ($value instanceof DateInterval) {
+            $this->ends_at->add($value);
+        }
+        else {
+            $this->ends_at = date('Y-m-d H:i:s', strtotime("$this->ends_at +$value"));
+        }
 
         $this->save();
 
@@ -431,20 +456,27 @@ class Subscription extends Model
     }
 
     /**
-     * Prepone the subscription's end date
+     * Advance the subscription's end date
      *
-     * @param Carbon|DateInterval|string $value
+     * @param DateInterval|string|Carbon $value
+     *
      * @return Subscription
      */
-    public function preponeEndDate($value)
+    public function advanceEndDate(DateInterval|Carbon|string $value)
     {
-        if ($value instanceof Carbon)
-        {
-            if ($this->ends_at->lt($value)) throw new LogicException(__('Cannot prepone the an ulterior date.'));
-            $this->ends_at =  $value;
+        if ($value instanceof Carbon) {
+            if ($this->ends_at->lt($value)) {
+                throw new LogicException(__('Cannot advance the an ulterior date.'));
+            }
+
+            $this->ends_at = $value;
         }
-        elseif ($value instanceof DateInterval) $this->ends_at->sub($value);
-        else $this->ends_at = date('Y-m-d H:i:s', strtotime("$this->ends_at -$value"));
+        elseif ($value instanceof DateInterval) {
+            $this->ends_at->sub($value);
+        }
+        else {
+            $this->ends_at = date('Y-m-d H:i:s', strtotime("$this->ends_at -$value"));
+        }
 
         $this->save();
 
@@ -456,6 +488,7 @@ class Subscription extends Model
      *
      * @param Feature $feature
      * @param float $uses
+     *
      * @return bool
      */
     public function remainsEnoughUsageForFeature(Feature $feature, float $uses): bool
@@ -467,13 +500,15 @@ class Subscription extends Model
      * Check if feature has validity
      *
      * @param Feature $feature
+     *
      * @return bool
      */
     public function featureHasValidity(Feature $feature): bool
     {
         $featureResettablePeriod = $this->resettablePeriodOfFeature($feature);
         $featureResettableInterval = $this->resettableIntervalOfFeature($feature);
-        $method = 'add'.ucfirst($featureResettableInterval).'s';
+
+        $method = 'add' . ucfirst($featureResettableInterval) . 's';
 
         return ($featureResettablePeriod && $featureResettableInterval
             && ($this->starts_at->{$method}($featureResettablePeriod)->gte(now())));
@@ -483,7 +518,8 @@ class Subscription extends Model
      * Resettable period in a subscription for the feature
      *
      * @param Feature $feature
-     * @return ?int
+     *
+     * @return int|null
      */
     public function resettablePeriodOfFeature(Feature $feature): ?int
     {
@@ -494,6 +530,7 @@ class Subscription extends Model
      * Resettable period in a subscription for the feature
      *
      * @param Feature $feature
+     *
      * @return ?string
      */
     public function resettableIntervalOfFeature(Feature $feature): ?string
@@ -509,15 +546,17 @@ class Subscription extends Model
      *
      * @return Subscription
      */
-    public function incrementFeatureUsage(Feature $feature, float $uses = 1)
+    public function incrementFeatureUsage(Feature $feature, float $uses = 1): static
     {
         $uses = abs($uses);
 
-        if (!$this->remainsEnoughUsageForFeature($feature, $uses))
+        if (! $this->remainsEnoughUsageForFeature($feature, $uses)) {
             throw new LogicException(__('We can\'t perform the action due to feature usage limitation.'));
+        }
 
-        if (!$this->featureHasValidity($feature))
+        if (! $this->featureHasValidity($feature)) {
             throw new LogicException(__('We can\'t perform the action due to feature usage expiration.'));
+        }
 
         $this->usages()->create([
             'feature_id' => $feature->id,
@@ -535,12 +574,13 @@ class Subscription extends Model
      *
      * @return Subscription
      */
-    public function decrementFeatureUsage(Feature $feature, float $uses = 1)
+    public function decrementFeatureUsage(Feature $feature, float $uses = 1): static
     {
         $uses = abs($uses);
 
-        if (!$this->featureHasValidity($feature))
+        if (! $this->featureHasValidity($feature)) {
             throw new LogicException(__('We can\'t perform the action due to feature usage expiration.'));
+        }
 
         $this->usages()->create([
             'feature_id' => $feature->id,
@@ -556,31 +596,26 @@ class Subscription extends Model
      * @param ?string $timezone
      * @param ?callable $action Action to perform in the same transaction after the subscription is renewed
      * @param int $tries Number of attempts on failure
+     *
      * @return self
      */
-    public function renew(string $timezone = null, callable $action = null, int $tries = 2)
+    public function renew(string $timezone = null, callable $action = null, int $tries = 2): Subscription
     {
-        if (!$this->ended() && !$this->canceled())
+        if (! $this->ended() && ! $this->canceled()) {
             throw new LogicException(__('You can\'t renew because you have an active subscription.'));
+        }
 
         return DB::transaction(function () use ($timezone, $action) {
-            $newSubscription = $this->load([
-                // Load not resettable supplements
-                'supplements' => function ($query) {
-                    $query->whereHas('feature', function ($subQuery) {
-                       $subQuery->notResettable();
-                    });
-            }], [
-                // Load not resettable usages
-                'usages' => function ($query) {
-                    $query->whereHas('feature', function ($subQuery) {
-                        $subQuery->notResettable();
-                    });
-            }])->replicate([
-                'stars_at',
-                'ends_at',
-                'canceled_at'
-            ]);
+            $newSubscription = $this
+                ->load([
+                    'supplements' => function ($query) {
+                        return $query->whereHas('feature', fn ($subQuery) => $subQuery->notResettable());
+                    },
+                    'usages' => function ($query) {
+                        $query->whereHas('feature', fn ($subQuery) => $subQuery->notResettable());
+                    }
+                ])
+                ->replicate(['stars_at', 'ends_at', 'canceled_at']);
 
             $newSubscription->price = $this->plan->price;
             $newSubscription->timezone = $timezone;

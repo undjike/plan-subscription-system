@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Spatie\Translatable\HasTranslations;
 use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
 
 /**
@@ -67,36 +66,32 @@ use Undjike\PlanSubscriptionSystem\Traits\HasFeature;
  * @method static Builder|Plan withAnyFeature($featureName)
  * @method static \Illuminate\Database\Query\Builder|Plan withTrashed()
  * @method static \Illuminate\Database\Query\Builder|Plan withoutTrashed()
- * @method static self firstWhere(string $string, string $value)
+ * @method static self|null firstWhere(string $string, string $value)
  * @method static self create(array $array)
  */
 class Plan extends Model
 {
-    use HasTranslations, SoftDeletes, HasFeature;
+    use SoftDeletes, HasFeature;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
-    protected $fillable = ['name', 'description', 'price', 'signup_fee', 'dedicated',
+    protected $fillable = [
+        'name', 'description', 'price', 'signup_fee', 'dedicated',
         'invoice_period', 'invoice_interval', 'grace_period', 'grace_interval',
-        'trial_period', 'trial_interval'];
-
-    /**
-     * The attributes that are translatable.
-     *
-     * @var array
-     */
-    public $translatable = ['description'];
+        'trial_period', 'trial_interval'
+    ];
 
     /**
      * Get plan by name
      *
      * @param string $planName
-     * @return mixed
+     *
+     * @return Plan|null
      */
-    public static function byName(string $planName)
+    public static function byName(string $planName): ?Plan
     {
         return self::firstWhere('name', $planName);
     }
@@ -109,7 +104,7 @@ class Plan extends Model
     public function features(): BelongsToMany
     {
         return $this->belongsToMany(Feature::class, 'plan_features')
-                    ->withPivot(['value', 'resettable_period', 'resettable_interval']);
+            ->withPivot(['value', 'resettable_period', 'resettable_interval']);
     }
 
     /**
@@ -129,13 +124,14 @@ class Plan extends Model
      */
     public function activeSubscriptions(): HasMany
     {
-        return $this->subscriptions()->where(function (Builder $query) {
-            $query->where('starts_at', '<=', now())
-                  ->where('ends_at', '>', now())
-                  ->whereNull('canceled_at');
-        })->orWhere(function (Builder $query) {
-            $query->whereNotNull('canceled_at');
-        });
+        return $this->subscriptions()
+            ->where(function (Builder $query) {
+                return $query
+                    ->where('starts_at', '<=', now())
+                    ->where('ends_at', '>', now())
+                    ->whereNull('canceled_at');
+            })
+            ->orWhere(fn (Builder $query) => $query->whereNotNull('canceled_at'));
     }
 
     /**
@@ -145,7 +141,7 @@ class Plan extends Model
      */
     public function isFree(): bool
     {
-        return (float) $this->price <= 0.00;
+        return $this->price <= 0.00;
     }
 
     /**
@@ -171,22 +167,25 @@ class Plan extends Model
     /**
      * Plans with any of the specified features
      *
-     * @param Builder $builder
+     * @param $builder
      * @param string|array|mixed $featureName
-     * @return Builder
+     *
+     * @return mixed
      */
-    public function scopeWithAnyFeature(Builder $builder, ...$featureName)
+    public function scopeWithAnyFeature($builder, ...$featureName): mixed
     {
-        return $builder->whereHas('features', function (Builder $query) use ($featureName) {
-            $query->whereIn('name', (array) $featureName);
-        });
+        return $builder->whereHas(
+            'features',
+            fn ($query) => $query->whereIn('name', $featureName)
+        );
     }
 
     /**
-     * Check id plan offers enough usage
+     * Check if plan offers enough usage
      *
      * @param Usage $usage
      * @param int $supplementOf
+     *
      * @return bool
      */
     public function offerEnoughUsageFor(Usage $usage, int $supplementOf = 0): bool

@@ -9,12 +9,11 @@
         }
     ],
     "require": {
-        "ext-pdo": "*",
-        "spatie/laravel-translatable": "^4.4"
+        "ext-pdo": "*"
     },
     "require-dev": {
-        "orchestra/testbench": "^5.4",
-        "phpunit/phpunit": "^9.3"
+        "orchestra/testbench": "^7.22",
+        "phpunit/phpunit": "^9.6"
     },
     "autoload": {
         "psr-4": {

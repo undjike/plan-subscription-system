@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
-use Spatie\Translatable\HasTranslations;
 
 /**
  * @property int $id
@@ -52,7 +51,7 @@ use Spatie\Translatable\HasTranslations;
  */
 class Feature extends Model
 {
-    use HasTranslations, SoftDeletes;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -60,13 +59,6 @@ class Feature extends Model
      * @var array
      */
     protected $fillable = ['name', 'description', 'price', 'quantifier', 'countable', 'resettable', 'extendable'];
-
-    /**
-     * The attributes that are translatable.
-     *
-     * @var array
-     */
-    public $translatable = ['description'];
 
     /**
      * Get feature by name
@@ -87,7 +79,7 @@ class Feature extends Model
      */
     public function scopeCountable(\Illuminate\Database\Eloquent\Builder $builder)
     {
-        return $builder->where('countable', "=", 1);
+        return $builder->where('countable', '=', true);
     }
 
     /**
@@ -98,7 +90,7 @@ class Feature extends Model
      */
     public function scopeResettable(\Illuminate\Database\Eloquent\Builder $builder)
     {
-        return $builder->where('resettable', "=", 1);
+        return $builder->where('resettable', '=', true);
     }
 
     /**
@@ -109,7 +101,7 @@ class Feature extends Model
      */
     public function scopeNotResettable(\Illuminate\Database\Eloquent\Builder $builder)
     {
-        return $builder->where('resettable', "=", 0);
+        return $builder->where('resettable', '=', false);
     }
 
     /**
